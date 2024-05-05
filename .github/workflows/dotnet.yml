@@ -20,7 +20,7 @@ jobs:
 
     env:
       BUILD_CONFIG: 'Release'
-      SOLUTION: 'Cross.ErrorHandlers.sln'
+      SOLUTION: 'Cross.Storage.Providers.sln'
 
     runs-on: ubuntu-latest
 
