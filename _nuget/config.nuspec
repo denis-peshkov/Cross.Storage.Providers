@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Cross.Storage.Providers</id>
+    <version>7.0.0</version>
+    <authors>denis-peshkov</authors>
+    <owners>denis-peshkov</owners>
+    <copyright>Copyright 2024</copyright>
+    <license type="expression">MIT</license>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/denis-peshkov/Cross.Storage.Providers</projectUrl>
+    <repository type="git" url="https://github.com/denis-peshkov/Cross.Storage.Providers" />
+    <readme>docs\README.md</readme>
+    <icon>icon.png</icon>
+    <releaseNotes>
+      Initial version.
+    </releaseNotes>
+    <description>Written on C#.</description>
+    <tags>NetCore</tags>
+    <dependencies>
+      <dependency id="AWSSDK.S3" version="3.7.306.2" />
+      <dependency id="Azure.Storage.Blobs" version="12.13.1" />
+      <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
+      <dependency id="Microsoft.AspNetCore.Mvc" version="2.2.0" />
+      <dependency id="Microsoft.Extensions.DependencyInjection" version="7.0.0" />
+      <dependency id="Microsoft.Extensions.Logging.Abstractions" version="7.0.0" />
+      <dependency id="Microsoft.Extensions.Options.ConfigurationExtensions" version="7.0.0" />
+      <dependency id="Microsoft.Extensions.Options.DataAnnotations" version="7.0.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="..\Cross.Storage.Providers\bin\Release\net7.0\Cross.Storage.Providers*.* " target="lib\net7.0" />
+    <file src="..\README.md" target="docs\" />
+    <file src="..\icon.png" target="" />
+  </files>
+</package>
