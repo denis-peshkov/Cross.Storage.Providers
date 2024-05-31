@@ -78,7 +78,7 @@ jobs:
 
       - name: Nuget Push
         if: ${{ !startsWith(github.ref, 'refs/pull') }}
-        run: nuget push **/Cross.Url.${{ env.semVer }}.symbols.nupkg -ApiKey ${{ secrets.NUGET_API_KEY }} -Source "https://api.nuget.org/v3/index.json" -SkipDuplicate
+        run: nuget push **/Cross.Storage.Providers.${{ env.semVer }}.symbols.nupkg -ApiKey ${{ secrets.NUGET_API_KEY }} -Source "https://api.nuget.org/v3/index.json" -SkipDuplicate
 
       - name: Test
         run: dotnet test --no-build --verbosity normal
