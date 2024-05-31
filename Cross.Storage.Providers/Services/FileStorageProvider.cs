@@ -119,6 +119,56 @@ public class FileStorageProvider : IStorageProvider
             File.Delete(fileName);
     }
 
+    public Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default)
+    {
+        if (string.IsNullOrEmpty(prefix))
+        {
+            return Task.CompletedTask;
+        }
+
+        BuildFullPath(ref prefix);
+
+        var directoryPath = Path.GetDirectoryName(prefix);
+
+        var filename = Path.GetFileName(prefix);
+
+        if (!Directory.Exists(directoryPath))
+        {
+            return Task.CompletedTask;
+        }
+
+        var files = Directory.GetFiles(directoryPath, $"{filename}*");
+
+        foreach (var file in files)
+        {
+            File.Delete(file);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default)
+    {
+        var images = new List<string>();
+        foreach (var filePath in filePaths)
+        {
+            var path = filePath;
+            BuildFullPath(ref path);
+            images.Add(path);
+        }
+
+        var fileNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+        foreach (var fileName in fileNames)
+        {
+            if (!images.Contains(fileName))
+            {
+                File.Delete(fileName);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     public async Task DeleteFileAsync(string fileName, CancellationToken stoppingToken = default)
     {
         BuildFullPath(ref fileName);
@@ -237,6 +287,11 @@ public class FileStorageProvider : IStorageProvider
         BuildFullPath(ref fileName);
 
         return (new FileInfo(fileName).Length / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
+    }
+
+    public Task UndeleteFile(string filePath)
+    {
+        throw new NotImplementedException();
     }
 
     public void Dispose()

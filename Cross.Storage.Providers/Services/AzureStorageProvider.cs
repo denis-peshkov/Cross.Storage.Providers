@@ -95,6 +95,13 @@ public class AzureStorageProvider : IStorageProvider
         return (blockBlob.GetProperties().Value.ContentLength / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
     }
 
+    public async Task UndeleteFile(string filePath)
+    {
+        var blockBlob = _blobContainerClient.GetBlockBlobClient(filePath);
+        await blockBlob.UndeleteAsync();
+    }
+
+
     public string GetDirectoryName(string path)
     {
         var result = Path.GetDirectoryName(path);
@@ -169,6 +176,33 @@ public class AzureStorageProvider : IStorageProvider
         }
 
         _blobContainerClient.DeleteBlobIfExists(fileName);
+    }
+
+    public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default)
+    {
+        if (string.IsNullOrEmpty(prefix))
+        {
+            return;
+        }
+
+        await foreach (var blobItem in _blobContainerClient.GetBlobsAsync(prefix: prefix, cancellationToken: stoppingToken))
+        {
+            // Delete each blob with the specified prefix
+            var blobClient = _blobContainerClient.GetBlobClient(blobItem.Name);
+            await blobClient.DeleteIfExistsAsync(cancellationToken: stoppingToken);
+        }
+    }
+
+    public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default)
+    {
+        var blobNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+        foreach (var blobName in blobNames)
+        {
+            if (!filePaths.Contains(blobName))
+            {
+                await _blobContainerClient.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: stoppingToken);
+            }
+        }
     }
 
     public void CreateDirectory(string path)

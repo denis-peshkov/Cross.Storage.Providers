@@ -22,6 +22,10 @@ public interface IStorageProvider : IDisposable
 
     void DeleteFile(string fileName);
 
+    Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default);
+
+    Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default);
+
     Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken stoppingToken = default);
 
     Task<bool> IsFileExistAsync(string fileName, CancellationToken stoppingToken = default);
@@ -47,4 +51,6 @@ public interface IStorageProvider : IDisposable
     /// <param name="sizeUnit">Единица измерения информации.</param>
     /// <returns>Размер файла.</returns>
     string GetFileSize(string fileName, SizeUnits sizeUnit);
+
+    Task UndeleteFile(string filePath);
 }
