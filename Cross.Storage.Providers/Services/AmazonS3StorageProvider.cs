@@ -156,6 +156,44 @@ public class AmazonS3StorageProvider : IStorageProvider
         _s3Client.DeleteObjectAsync(request).GetAwaiter().GetResult();
     }
 
+    public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default)
+    {
+        var request = new ListObjectsRequest {
+            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            Prefix = prefix
+        };
+
+        var response = await _s3Client.ListObjectsAsync(request, CancellationToken.None);
+        foreach (var item in response.S3Objects)
+        {
+            var deleteObjectRequest = new DeleteObjectRequest
+            {
+                BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+                Key = item.Key
+            };
+
+            await _s3Client.DeleteObjectAsync(deleteObjectRequest, stoppingToken);
+        }
+    }
+
+    public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default)
+    {
+        var fileNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+        foreach (var fileName in fileNames)
+        {
+            if (!filePaths.Contains(fileName))
+            {
+                var deleteRequest = new DeleteObjectRequest
+                {
+                    BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+                    Key = fileName
+                };
+
+                await _s3Client.DeleteObjectAsync(deleteRequest, stoppingToken);
+            }
+        }
+    }
+
     public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken stoppingToken = default)
     {
         throw new NotImplementedException();
@@ -278,5 +316,10 @@ public class AmazonS3StorageProvider : IStorageProvider
         var response = _s3Client.GetObjectMetadataAsync(request).GetAwaiter().GetResult();
 
         return (response.ContentLength / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
+    }
+
+    public Task UndeleteFile(string filePath)
+    {
+        throw new NotImplementedException();
     }
 }
