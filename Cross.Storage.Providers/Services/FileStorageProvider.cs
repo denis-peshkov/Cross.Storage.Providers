@@ -209,7 +209,8 @@ public class FileStorageProvider : IStorageProvider
         return !string.IsNullOrEmpty(result) ? result : string.Empty;
     }
 
-    public string GetUri(string fileName, string baseUrl) => baseUrl + fileName;
+    public string GetBaseUrl()
+        => _webRootPath;
 
     public void CreateDirectory(string path)
     {
