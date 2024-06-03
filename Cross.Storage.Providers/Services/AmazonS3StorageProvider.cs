@@ -284,7 +284,7 @@ public class AmazonS3StorageProvider : IStorageProvider
         throw new NotImplementedException();
     }
 
-    public string GetUri(string fileName, string baseUrl)
+    public string GetBaseUrl()
     {
         throw new NotImplementedException();
     }

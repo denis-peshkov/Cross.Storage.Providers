@@ -40,7 +40,7 @@ public interface IStorageProvider : IDisposable
 
     string GetDirectoryName(string path);
 
-    string GetUri(string fileName, string baseUrl);
+    string GetBaseUrl();
 
     string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption);
 

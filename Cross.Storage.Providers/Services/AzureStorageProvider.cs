@@ -108,7 +108,8 @@ public class AzureStorageProvider : IStorageProvider
         return !string.IsNullOrEmpty(result) ? result : string.Empty;
     }
 
-    public string GetUri(string fileName, string baseUrl) => _blobContainerClient.Uri.ToString();
+    public string GetBaseUrl()
+        => _blobContainerClient.Uri.ToString();
 
     public void Dispose()
     {
