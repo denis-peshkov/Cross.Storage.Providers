@@ -4,3 +4,6 @@ Initial version.
 8.0.0 - 11 Oct 2024
 Add support .Net 8.
 Rework AmazonS3StorageProvider.
+
+8.1.0 - 11 Oct 2024
+Fix S3 config options.
