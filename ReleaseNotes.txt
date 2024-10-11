@@ -7,3 +7,6 @@ Rework AmazonS3StorageProvider.
 
 8.1.0 - 11 Oct 2024
 Fix S3 config options.
+
+8.2.0 - 11 Oct 2024
+Fix S3 config options.

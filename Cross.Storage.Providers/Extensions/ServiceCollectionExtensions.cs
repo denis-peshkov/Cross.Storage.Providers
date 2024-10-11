@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
                 services.TryAddSingleton(_ => new AmazonS3Client(new BasicAWSCredentials(
                     configuration["StorageProvider:AmazonS3Storage:AccessKey"],
                     configuration["StorageProvider:AmazonS3Storage:SecretKey"]),
-                    RegionEndpoint.GetBySystemName(configuration["StorageProvider:AmazonS3Storage:RegionSystemName"])));
+                    RegionEndpoint.GetBySystemName(configuration["StorageProvider:AmazonS3Storage:Region"])));
                 break;
             default:
                 throw new ArgumentException("Error while registering StorageProvider: wrong configuration.");
