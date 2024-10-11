@@ -1,4 +1,4 @@
-namespace Cross.Storage.Providers.Services;
+namespace Cross.Storage.Providers.Providers;
 
 public abstract class StorageProviderBase : IDisposable
 {
