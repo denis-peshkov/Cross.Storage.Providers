@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>Cross.Storage.Providers</id>
-    <version>7.0.0</version>
+    <version>8.0.0</version>
     <authors>denis-peshkov</authors>
     <owners>denis-peshkov</owners>
     <copyright>Copyright 2024</copyright>
@@ -13,10 +13,11 @@
     <readme>docs\README.md</readme>
     <icon>icon.png</icon>
     <releaseNotes>
-      Initial version.
+      Add support .Net 8.
+      Rework AmazonS3StorageProvider.
     </releaseNotes>
-    <description>Written on C#.</description>
-    <tags>NetCore</tags>
+    <description>Simple .NET StorageProviders with easy register and use. Support File system, Azure Blobs, Amazon S3. Written on C#.</description>
+    <tags>.NET Storage Providers Files Azure Blobs Amazon S3 NetCore</tags>
     <dependencies>
       <dependency id="AWSSDK.S3" version="3.7.306.2" />
       <dependency id="Azure.Storage.Blobs" version="12.13.1" />
@@ -30,6 +31,7 @@
   </metadata>
   <files>
     <file src="..\Cross.Storage.Providers\bin\Release\net7.0\Cross.Storage.Providers*.* " target="lib\net7.0" />
+    <file src="..\Cross.Storage.Providers\bin\Release\net8.0\Cross.Storage.Providers*.* " target="lib\net8.0" />
     <file src="..\README.md" target="docs\" />
     <file src="..\icon.png" target="" />
   </files>
