@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
         switch (useStorage)
         {
             case "FileStorage":
-                services.TryAddSingleton<IStorageProvider>(x => new FileStorageProvider(webRootPath)); // TODO use here the config
+                services.TryAddSingleton<IStorageProvider>(x => new FileStorageProvider(webRootPath));
                 break;
             case "AzureBlobStorage":
                 services.TryAddSingleton<IStorageProvider, AzureStorageProvider>();
@@ -22,9 +22,9 @@ public static class ServiceCollectionExtensions
             case "AmazonS3Storage":
                 services.TryAddSingleton<IStorageProvider, AmazonS3StorageProvider>();
                 services.TryAddSingleton(_ => new AmazonS3Client(new BasicAWSCredentials(
-                    configuration["StorageProvider:AmazonS3Options:AccessKey"],
-                    configuration["StorageProvider:AmazonS3Options:SecretKey"]),
-                    RegionEndpoint.GetBySystemName(configuration["StorageProvider:AmazonS3Options:RegionSystemName"])));
+                    configuration["StorageProvider:AmazonS3Storage:AccessKey"],
+                    configuration["StorageProvider:AmazonS3Storage:SecretKey"]),
+                    RegionEndpoint.GetBySystemName(configuration["StorageProvider:AmazonS3Storage:RegionSystemName"])));
                 break;
             default:
                 throw new ArgumentException("Error while registering StorageProvider: wrong configuration.");

@@ -1,6 +1,6 @@
 ﻿namespace Cross.Storage.Providers.Options;
 
-public class AmazonS3Options
+public class AmazonS3StorageOptions
 {
     public string? AccessKey { get; set; }
 
