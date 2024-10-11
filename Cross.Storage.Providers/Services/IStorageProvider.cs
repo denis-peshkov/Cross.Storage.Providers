@@ -6,7 +6,7 @@ public interface IStorageProvider : IDisposable
 
     Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default);
 
-    Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default);
+    Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default);
 
     Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default);
 
@@ -16,7 +16,9 @@ public interface IStorageProvider : IDisposable
 
     Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default);
 
     Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default);
 
@@ -43,6 +45,8 @@ public interface IStorageProvider : IDisposable
     string GetDirectoryName(string path);
 
     string GetBaseUrl();
+
+    Task<string> GetUriAsync(string filePath);
 
     string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption);
 

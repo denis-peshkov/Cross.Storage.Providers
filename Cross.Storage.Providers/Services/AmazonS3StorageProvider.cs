@@ -2,36 +2,49 @@
 
 public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 {
-    private readonly AmazonS3Client _s3Client;
+    private readonly AmazonS3Client _client;
 
     private readonly AmazonS3Options _amazonS3Options;
 
-    public AmazonS3StorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, AmazonS3Client s3Client)
+    public AmazonS3StorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, AmazonS3Client client)
     {
-        _s3Client = s3Client;
+        _client = client;
         _amazonS3Options = storageProviderOptions.Value.AmazonS3Storage ?? throw new ArgumentNullException(nameof(StorageProviderOptions.AmazonS3Storage));
     }
 
-    public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
-
-    public async Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
+    protected override void Dispose(bool disposing)
     {
-        if (!await IsFileExistAsync(fileName, cancellationToken))
-        {
-            throw new InvalidOperationException($"File {fileName} doesn`t exist.");
-        }
+        _client.Dispose();
 
+        base.Dispose(disposing);
+    }
+
+    public async Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
+    {
         var request = new GetObjectRequest
         {
             BucketName = _amazonS3Options.BucketName,
-            Key = fileName
+            Key = fileName,
+        };
+
+        var response = await _client.GetObjectAsync(request, cancellationToken);
+        using var readStream = new StreamReader(response.ResponseStream);
+
+        return await readStream.ReadToEndAsync(cancellationToken);
+    }
+
+    public async Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
+    {
+        var request = new GetObjectRequest
+        {
+            BucketName = _amazonS3Options.BucketName,
+            Key = fileName,
         };
 
         // Execute request
-        var response = await _s3Client.GetObjectAsync(request, cancellationToken);
-        await using var responseStream = response.ResponseStream;
+        var response = await _client.GetObjectAsync(request, cancellationToken);
 
+        await using var responseStream = response.ResponseStream;
         var memoryStream = new MemoryStream();
 
         // Read the response stream into a memory stream
@@ -41,7 +54,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         return memoryStream.ToArray();
     }
 
-    public async Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
+    public async Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
     {
         if (!await IsFileExistAsync(fileName, cancellationToken))
         {
@@ -55,13 +68,23 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         };
 
         // Execute request
-        var response = await _s3Client.GetObjectAsync(request, cancellationToken);
+        var response = await _client.GetObjectAsync(request, cancellationToken);
+        response.ResponseStream.Position = 0;
 
         return response.ResponseStream;
     }
 
-    public Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    public async Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default)
+    {
+        var request = new PutObjectRequest
+        {
+            BucketName = _amazonS3Options.BucketName,
+            Key = fileName,
+            ContentBody = content,
+        };
+
+        await _client.PutObjectAsync(request, cancellationToken);
+    }
 
     public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
     {
@@ -72,7 +95,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
             InputStream = new MemoryStream(content),
         };
 
-        await _s3Client.PutObjectAsync(request, cancellationToken);
+        await _client.PutObjectAsync(request, cancellationToken);
     }
 
     public async Task WriteStreamAsync(string fileName, Stream content, CancellationToken cancellationToken = default)
@@ -84,25 +107,23 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
             InputStream = content,
         };
 
-        await _s3Client.PutObjectAsync(request, cancellationToken);
+        await _client.PutObjectAsync(request, cancellationToken);
     }
 
     public async Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default)
     {
-        await using var stream = content.OpenReadStream();
-
         var request = new PutObjectRequest
         {
             BucketName = _amazonS3Options.BucketName,
             Key = fileName,
-            InputStream = stream,
-            ContentType = mimetype,
+            InputStream = content.OpenReadStream(),
+            ContentType = mimetype, // content.ContentType,
         };
 
-        await _s3Client.PutObjectAsync(request, cancellationToken);
+        await _client.PutObjectAsync(request, cancellationToken);
     }
 
-    public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyCollection<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
     public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
@@ -110,10 +131,10 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         var request = new DeleteObjectRequest
         {
             BucketName = _amazonS3Options.BucketName,
-            Key = fileName
+            Key = fileName,
         };
 
-        await _s3Client.DeleteObjectAsync(request, cancellationToken);
+        await _client.DeleteObjectAsync(request, cancellationToken);
     }
 
     public void DeleteFile(string fileName)
@@ -121,29 +142,29 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         var request = new DeleteObjectRequest
         {
             BucketName = _amazonS3Options.BucketName,
-            Key = fileName
+            Key = fileName,
         };
 
-        _s3Client.DeleteObjectAsync(request).GetAwaiter().GetResult();
+        _client.DeleteObjectAsync(request).GetAwaiter().GetResult();
     }
 
     public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
             BucketName = _amazonS3Options.BucketName,
-            Prefix = prefix
+            Prefix = prefix,
         };
 
-        var response = await _s3Client.ListObjectsAsync(request, CancellationToken.None);
+        var response = await _client.ListObjectsAsync(request, CancellationToken.None);
         foreach (var item in response.S3Objects)
         {
             var deleteObjectRequest = new DeleteObjectRequest
             {
                 BucketName = _amazonS3Options.BucketName,
-                Key = item.Key
+                Key = item.Key,
             };
 
-            await _s3Client.DeleteObjectAsync(deleteObjectRequest, cancellationToken);
+            await _client.DeleteObjectAsync(deleteObjectRequest, cancellationToken);
         }
     }
 
@@ -157,44 +178,77 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
                 var deleteRequest = new DeleteObjectRequest
                 {
                     BucketName = _amazonS3Options.BucketName,
-                    Key = fileName
+                    Key = fileName,
                 };
 
-                await _s3Client.DeleteObjectAsync(deleteRequest, cancellationToken);
+                await _client.DeleteObjectAsync(deleteRequest, cancellationToken);
             }
         }
     }
 
-    public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    public async Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
+        => await _client.CopyObjectAsync(new CopyObjectRequest()
+        {
+            SourceBucket = _amazonS3Options.BucketName,
+            SourceKey = sourceFileName,
+            DestinationBucket = _amazonS3Options.BucketName,
+            DestinationKey = destinationFileName,
+        }, cancellationToken);
 
-    public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
-    public async Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
+    public async Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
+    {
+        await CopyFileAsync(sourceFileName, destinationFileName, cancellationToken);
+        await DeleteFileAsync(sourceFileName, cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
             BucketName = _amazonS3Options.BucketName,
-            Prefix = fileName,
-            MaxKeys = 1
+            Prefix = prefix,
+            MaxKeys = 1,
         };
 
-        var response = await _s3Client.ListObjectsAsync(request, CancellationToken.None);
+        var response = await _client.ListObjectsAsync(request, cancellationToken);
 
-        return response.S3Objects.Any();
+        var result =  response.S3Objects
+            .Select(x=>  x.Key)
+            .ToList();
+
+        return result;
+    }
+
+    public async Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _client.GetObjectMetadataAsync(new()
+            {
+                BucketName = _amazonS3Options.BucketName,
+                Key = fileName,
+            }, cancellationToken);
+
+            return true;
+        }
+        catch (AmazonS3Exception ex)
+        {
+            if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // Object does not exist
+                return false;
+            }
+            else
+            {
+                // Other error occurred
+                throw;
+            }
+        }
     }
 
     public bool IsFileExist(string fileName)
     {
-        var request = new ListObjectsRequest {
-            BucketName = _amazonS3Options.BucketName,
-            Prefix = fileName,
-            MaxKeys = 1
-        };
-
-        var response = _s3Client.ListObjectsAsync(request, CancellationToken.None).GetAwaiter().GetResult();
-
-        return response.S3Objects.Any();
+        return IsFileExistAsync(fileName).GetAwaiter().GetResult();
     }
 
     public void CreateDirectory(string path)
@@ -213,7 +267,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
                 Prefix = path,
             };
 
-            var response = _s3Client.ListObjectsV2Async(request).GetAwaiter().GetResult();
+            var response = _client.ListObjectsV2Async(request).GetAwaiter().GetResult();
             foreach (var obj in response.S3Objects)
             {
                 await DeleteFileAsync(obj.Key);
@@ -238,7 +292,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
             Prefix = path,
         };
 
-        var response = await _s3Client.ListObjectsV2Async(request);
+        var response = await _client.ListObjectsV2Async(request);
 
         var tasks = response.S3Objects
             .Select(obj =>
@@ -246,7 +300,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
                     { BucketName = _amazonS3Options.BucketName, Key = obj.Key }
             )
             .Select(deleteRequest =>
-                _s3Client.DeleteObjectAsync(deleteRequest)).Cast<Task>().ToList();
+                _client.DeleteObjectAsync(deleteRequest)).Cast<Task>().ToList();
 
         await Task.WhenAll(tasks);
     }
@@ -256,6 +310,18 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
     public string GetBaseUrl()
         => throw new NotImplementedException();
+
+    public async Task<string> GetUriAsync(string filePath)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _amazonS3Options.BucketName,
+            Key = filePath,
+            Expires = DateTime.UtcNow.AddDays(7)
+        };
+
+        return await _client.GetPreSignedURLAsync(request);
+    }
 
     public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
@@ -268,7 +334,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         };
 
         // Execute request
-        var response = _s3Client.ListObjectsV2Async(request).GetAwaiter().GetResult();
+        var response = _client.ListObjectsV2Async(request).GetAwaiter().GetResult();
 
         return response.CommonPrefixes.Select(commonPrefix => commonPrefix.TrimEnd('/')).ToArray();
     }
@@ -281,7 +347,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
             Key = fileName,
         };
 
-        var response = _s3Client.GetObjectMetadataAsync(request).GetAwaiter().GetResult();
+        var response = _client.GetObjectMetadataAsync(request).GetAwaiter().GetResult();
 
         return (response.ContentLength / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
     }

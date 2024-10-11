@@ -41,7 +41,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         return File.ReadAllBytesAsync(fileName, cancellationToken);
     }
 
-    public Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
+    public Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
@@ -102,15 +102,21 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         await stream.CopyToAsync(fileStream, cancellationToken);
     }
 
-    public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyCollection<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref path);
 
         var reg = new Regex(fileMask);
 
-        return Task.FromResult(Directory.GetFiles(path).Where(fileName => reg.IsMatch(fileName)));
+        var result = Directory.GetFiles(path)
+            .Where(fileName => reg.IsMatch(fileName))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyCollection<string>>(result);
     }
 
+    public Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
 
     public void DeleteFile(string fileName)
     {
@@ -218,6 +224,9 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
 
     public string GetBaseUrl()
         => _webRootPath;
+
+    public Task<string> GetUriAsync(string filePath)
+        => throw new NotImplementedException();
 
     public void CreateDirectory(string path)
     {

@@ -2,14 +2,14 @@
 
 public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 {
-    private readonly BlobContainerClient _blobContainerClient;
+    private readonly BlobContainerClient _client;
 
     public AzureStorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, BlobServiceClient blobServiceClient)
     {
         var azureBlobStorage = storageProviderOptions.Value.AzureBlobStorage ?? throw new ArgumentNullException(nameof(StorageProviderOptions.AzureBlobStorage));
 
-        _blobContainerClient = blobServiceClient.GetBlobContainerClient(azureBlobStorage.ContainerName);
-        _blobContainerClient.CreateIfNotExists();
+        _client = blobServiceClient.GetBlobContainerClient(azureBlobStorage.ContainerName);
+        _client.CreateIfNotExists();
     }
 
     public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
@@ -22,19 +22,19 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+        var blockBlob = _client.GetBlockBlobClient(fileName);
         var result = await blockBlob.DownloadContentAsync(cancellationToken: cancellationToken);
         return result.Value.Content.ToArray();
     }
 
-    public async Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
+    public async Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
     {
         if (!IsFileExist(fileName))
         {
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+        var blockBlob = _client.GetBlockBlobClient(fileName);
         var result = await blockBlob.DownloadStreamingAsync(cancellationToken: cancellationToken);
         return result.Value.Content;
     }
@@ -44,31 +44,34 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
     {
-        var blockBlob = _blobContainerClient.GetBlobClient(fileName);
+        var blockBlob = _client.GetBlobClient(fileName);
 
         await blockBlob.UploadAsync(new BinaryData(content), cancellationToken: cancellationToken);
     }
 
     public async Task WriteStreamAsync(string fileName, Stream content, CancellationToken cancellationToken = default)
     {
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+        var blockBlob = _client.GetBlockBlobClient(fileName);
 
         await blockBlob.UploadAsync(content, cancellationToken: cancellationToken);
     }
 
     public async Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default)
     {
-        var blobClient = _blobContainerClient.GetBlobClient(fileName);
+        var blobClient = _client.GetBlobClient(fileName);
         await using var stream = content.OpenReadStream();
 
         await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = mimetype }, cancellationToken: cancellationToken);
     }
 
-    public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyCollection<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
+
+    public Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
     public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
-        => await _blobContainerClient.DeleteBlobIfExistsAsync(fileName, cancellationToken: cancellationToken);
+        => await _client.DeleteBlobIfExistsAsync(fileName, cancellationToken: cancellationToken);
 
     public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
     {
@@ -80,32 +83,31 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+        var blockBlob = _client.GetBlockBlobClient(fileName);
 
         return (await blockBlob.ExistsAsync()).Value;
     }
 
     public bool IsFileExist(string fileName)
     {
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+        var blockBlob = _client.GetBlockBlobClient(fileName);
 
         return blockBlob.Exists().Value;
     }
 
     public string GetFileSize(string fileName, SizeUnits sizeUnit)
     {
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+        var blockBlob = _client.GetBlockBlobClient(fileName);
 
         return (blockBlob.GetProperties().Value.ContentLength / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
     }
 
     public async Task UndeleteFile(string filePath)
     {
-        var blockBlob = _blobContainerClient.GetBlockBlobClient(filePath);
+        var blockBlob = _client.GetBlockBlobClient(filePath);
 
         await blockBlob.UndeleteAsync();
     }
-
 
     public string GetDirectoryName(string path)
     {
@@ -115,7 +117,10 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public string GetBaseUrl()
-        => _blobContainerClient.Uri.ToString();
+        => _client.Uri.ToString();
+
+    public Task<string> GetUriAsync(string filePath)
+        => throw new NotImplementedException();
 
     /// <summary>
     /// Возвращает BlobNames отфильтрованные по паттерну которые находятся в rootDirectory
@@ -131,7 +136,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
             rootDirectory += "/";
 
         var searchExtensions = searchPattern.Replace("*", "").Split('|').Where(ext => ext != ".").ToArray();
-        IEnumerable<BlobItem> blobs = _blobContainerClient.GetBlobs(traits: BlobTraits.Metadata, prefix: rootDirectory).Where(b => b.Metadata.Count == 0);
+        IEnumerable<BlobItem> blobs = _client.GetBlobs(traits: BlobTraits.Metadata, prefix: rootDirectory).Where(b => b.Metadata.Count == 0);
 
         if (searchExtensions.Any())
         {
@@ -161,7 +166,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
             return;
         }
 
-        _blobContainerClient.DeleteBlobIfExists(fileName);
+        _client.DeleteBlobIfExists(fileName);
     }
 
     public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
@@ -171,10 +176,10 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
             return;
         }
 
-        await foreach (var blobItem in _blobContainerClient.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken))
+        await foreach (var blobItem in _client.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken))
         {
             // Delete each blob with the specified prefix
-            var blobClient = _blobContainerClient.GetBlobClient(blobItem.Name);
+            var blobClient = _client.GetBlobClient(blobItem.Name);
             await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
         }
     }
@@ -186,7 +191,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
         {
             if (!filePaths.Contains(blobName))
             {
-                await _blobContainerClient.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
+                await _client.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
             }
         }
     }
@@ -201,7 +206,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
         path = Regex.Replace(path, @"\\+|/+", @"/");
         if (recursive)
         {
-            var blobs = _blobContainerClient.GetBlobs(prefix: path).OrderByDescending(x => x.Name).ToArray();
+            var blobs = _client.GetBlobs(prefix: path).OrderByDescending(x => x.Name).ToArray();
             foreach (var blob in blobs)
                 await DeleteFileAsync(blob.Name);
         }
@@ -219,7 +224,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
             path += "/";
 
         var countSeparator = path.Count(x => x.Equals('/'));
-        var topDirectoryBlobs = _blobContainerClient.GetBlobs(traits: BlobTraits.Metadata, prefix: path)
+        var topDirectoryBlobs = _client.GetBlobs(traits: BlobTraits.Metadata, prefix: path)
             .Where(b => b.Metadata.Count == 0 && b.Name.Count(c => c.Equals('/')) == countSeparator)
             .ToArray();
 
