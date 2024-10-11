@@ -6,5 +6,7 @@ public class AmazonS3Options
 
     public string? SecretKey { get; set; }
 
+    public RegionEndpoint RegionSystemName { get; set; }
+
     public string? BucketName { get; set; }
 }

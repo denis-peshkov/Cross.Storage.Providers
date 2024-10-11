@@ -6,9 +6,9 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 
     public AzureStorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, BlobServiceClient blobServiceClient)
     {
-        var options = storageProviderOptions.Value;
+        var azureBlobStorage = storageProviderOptions.Value.AzureBlobStorage ?? throw new ArgumentNullException(nameof(StorageProviderOptions.AzureBlobStorage));
 
-        _blobContainerClient = blobServiceClient.GetBlobContainerClient(options.AzureBlobStorage?.ContainerName);
+        _blobContainerClient = blobServiceClient.GetBlobContainerClient(azureBlobStorage.ContainerName);
         _blobContainerClient.CreateIfNotExists();
     }
 
@@ -95,12 +95,14 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
     public string GetFileSize(string fileName, SizeUnits sizeUnit)
     {
         var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
+
         return (blockBlob.GetProperties().Value.ContentLength / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
     }
 
     public async Task UndeleteFile(string filePath)
     {
         var blockBlob = _blobContainerClient.GetBlockBlobClient(filePath);
+
         await blockBlob.UndeleteAsync();
     }
 
@@ -108,6 +110,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
     public string GetDirectoryName(string path)
     {
         var result = Path.GetDirectoryName(path);
+
         return !string.IsNullOrEmpty(result) ? result : string.Empty;
     }
 
@@ -190,7 +193,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 
     public void CreateDirectory(string path)
     {
-        //AzureBlobStorage stores files in a flat hierarchy. No need to create directory.
+        // AzureBlobStorage stores files in a flat hierarchy. No need to create directory.
     }
 
     public async Task DeleteDirectory(string path, bool recursive = true)

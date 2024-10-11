@@ -17,7 +17,6 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         filePath = _webRootPath + filePath;
     }
 
-
     public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
@@ -27,7 +26,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        return File.ReadAllTextAsync(fileName);
+        return File.ReadAllTextAsync(fileName, cancellationToken);
     }
 
     public Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
@@ -39,7 +38,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        return File.ReadAllBytesAsync(fileName);
+        return File.ReadAllBytesAsync(fileName, cancellationToken);
     }
 
     public Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
@@ -57,7 +56,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
 
         await DeleteFileAsync(fileName, cancellationToken);
 
-        await File.WriteAllTextAsync(fileName, content);
+        await File.WriteAllTextAsync(fileName, content, cancellationToken);
     }
 
     public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
@@ -175,9 +174,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
     {
@@ -294,7 +291,5 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task UndeleteFile(string filePath)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 }

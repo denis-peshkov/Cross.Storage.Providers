@@ -4,18 +4,16 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 {
     private readonly AmazonS3Client _s3Client;
 
-    private readonly StorageProviderOptions _storageProviderOptions;
+    private readonly AmazonS3Options _amazonS3Options;
 
     public AmazonS3StorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, AmazonS3Client s3Client)
     {
         _s3Client = s3Client;
-        _storageProviderOptions = storageProviderOptions.Value;
+        _amazonS3Options = storageProviderOptions.Value.AmazonS3Storage ?? throw new ArgumentNullException(nameof(StorageProviderOptions.AmazonS3Storage));
     }
 
     public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public async Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
     {
@@ -26,7 +24,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         var request = new GetObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName
         };
 
@@ -45,14 +43,14 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
     {
-        if (!IsFileExist(fileName))
+        if (!await IsFileExistAsync(fileName, cancellationToken))
         {
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
         var request = new GetObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName,
         };
 
@@ -63,15 +61,13 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
     {
         var request = new PutObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName,
             InputStream = new MemoryStream(content),
         };
@@ -83,7 +79,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new PutObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName,
             InputStream = content,
         };
@@ -97,7 +93,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         var request = new PutObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName,
             InputStream = stream,
             ContentType = mimetype,
@@ -107,15 +103,13 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
     {
         var request = new DeleteObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName
         };
 
@@ -126,7 +120,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new DeleteObjectRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName
         };
 
@@ -136,7 +130,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Prefix = prefix
         };
 
@@ -145,7 +139,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         {
             var deleteObjectRequest = new DeleteObjectRequest
             {
-                BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+                BucketName = _amazonS3Options.BucketName,
                 Key = item.Key
             };
 
@@ -162,7 +156,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
             {
                 var deleteRequest = new DeleteObjectRequest
                 {
-                    BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+                    BucketName = _amazonS3Options.BucketName,
                     Key = fileName
                 };
 
@@ -172,19 +166,15 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public async Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Prefix = fileName,
             MaxKeys = 1
         };
@@ -197,7 +187,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     public bool IsFileExist(string fileName)
     {
         var request = new ListObjectsRequest {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Prefix = fileName,
             MaxKeys = 1
         };
@@ -209,7 +199,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
     public void CreateDirectory(string path)
     {
-        //AmazonS3Storage stores files in a flat hierarchy. No need to create directory.
+        // AmazonS3Storage stores files in a flat hierarchy. No need to create directory.
     }
 
     public async Task DeleteDirectory(string path, bool recursive = true)
@@ -219,7 +209,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         {
             var request = new ListObjectsV2Request
             {
-                BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+                BucketName = _amazonS3Options.BucketName,
                 Prefix = path,
             };
 
@@ -244,7 +234,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         var request = new ListObjectsV2Request
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Prefix = path,
         };
 
@@ -253,7 +243,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         var tasks = response.S3Objects
             .Select(obj =>
                 new DeleteObjectRequest
-                    { BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName, Key = obj.Key }
+                    { BucketName = _amazonS3Options.BucketName, Key = obj.Key }
             )
             .Select(deleteRequest =>
                 _s3Client.DeleteObjectAsync(deleteRequest)).Cast<Task>().ToList();
@@ -262,21 +252,17 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public string GetDirectoryName(string path)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public string GetBaseUrl()
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 
     public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
         // Create request to list objects in the root directory pattern
         var request = new ListObjectsV2Request
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Prefix = rootDirectory,
             Delimiter = "/"
         };
@@ -291,7 +277,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new GetObjectMetadataRequest
         {
-            BucketName = _storageProviderOptions.AmazonS3Storage?.BucketName,
+            BucketName = _amazonS3Options.BucketName,
             Key = fileName,
         };
 
@@ -301,7 +287,5 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task UndeleteFile(string filePath)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 }

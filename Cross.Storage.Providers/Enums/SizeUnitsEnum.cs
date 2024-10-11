@@ -6,5 +6,5 @@ public enum SizeUnits
     Kb,
     Mb,
     Gb,
-    Tb
+    Tb,
 }
