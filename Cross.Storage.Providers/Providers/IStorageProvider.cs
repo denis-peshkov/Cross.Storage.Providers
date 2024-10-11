@@ -1,0 +1,62 @@
+namespace Cross.Storage.Providers.Providers;
+
+public interface IStorageProvider : IDisposable
+{
+    Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default);
+
+    Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default);
+
+    Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default);
+
+    Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default);
+
+    Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default);
+
+    Task WriteStreamAsync(string fileName, Stream content, CancellationToken cancellationToken = default);
+
+    Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default);
+
+    Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default);
+
+    void DeleteFile(string fileName);
+
+    Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default);
+
+    Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default);
+
+    Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
+
+    Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
+
+    Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default);
+
+    bool IsFileExist(string fileName);
+
+    void CreateDirectory(string path);
+
+    Task DeleteDirectory(string path, bool recursive = true);
+
+    Task DeleteAllFilesFromDirectory(string path);
+
+    string GetDirectoryName(string path);
+
+    string GetBaseUrl();
+
+    Task<string> GetUriAsync(string filePath);
+
+    string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption);
+
+    /// <summary>
+    /// Получение размера файла.
+    /// </summary>
+    /// <param name="fileName">Имя файла.</param>
+    /// <param name="sizeUnit">Единица измерения информации.</param>
+    /// <returns>Размер файла.</returns>
+    string GetFileSize(string fileName, SizeUnits sizeUnit);
+
+    Task UndeleteFile(string filePath);
+}

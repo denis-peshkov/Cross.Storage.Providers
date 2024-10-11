@@ -1,9 +1,7 @@
-namespace Cross.Storage.Providers.Services;
+namespace Cross.Storage.Providers.Providers;
 
-public class FileStorageProvider : IStorageProvider
+public class FileStorageProvider : StorageProviderBase, IStorageProvider
 {
-    private bool _disposed;
-
     private readonly string _webRootPath;
 
     public FileStorageProvider(string webRootPath)
@@ -19,8 +17,7 @@ public class FileStorageProvider : IStorageProvider
         filePath = _webRootPath + filePath;
     }
 
-
-    public Task<string> ReadAsync(string fileName, CancellationToken stoppingToken = default)
+    public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
@@ -29,10 +26,10 @@ public class FileStorageProvider : IStorageProvider
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        return File.ReadAllTextAsync(fileName);
+        return File.ReadAllTextAsync(fileName, cancellationToken);
     }
 
-    public Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken stoppingToken = default)
+    public Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
@@ -41,72 +38,85 @@ public class FileStorageProvider : IStorageProvider
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        return File.ReadAllBytesAsync(fileName);
+        return File.ReadAllBytesAsync(fileName, cancellationToken);
     }
 
-    public async Task WriteAsync(string fileName, string content, CancellationToken stoppingToken = default)
+    public Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
+    {
+        BuildFullPath(ref fileName);
+
+        return Task.FromResult<Stream>(File.OpenRead(fileName));
+    }
+
+    public async Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
         CreateDirectory(fileName);
 
-        await DeleteFileAsync(fileName, stoppingToken);
+        await DeleteFileAsync(fileName, cancellationToken);
 
-        await File.WriteAllTextAsync(fileName, content);
+        await File.WriteAllTextAsync(fileName, content, cancellationToken);
     }
 
-    public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken stoppingToken = default)
+    public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
         CreateDirectory(fileName);
 
-        await DeleteFileAsync(fileName, stoppingToken);
+        await DeleteFileAsync(fileName, cancellationToken);
 
         await using var fileStream = File.OpenWrite(fileName);
 
-        await fileStream.WriteAsync(content, 0, content.Length, stoppingToken);
+        await fileStream.WriteAsync(content, 0, content.Length, cancellationToken);
     }
 
-    public async Task WriteStreamAsync(string fileName, Stream content, CancellationToken stoppingToken = default)
+    public async Task WriteStreamAsync(string fileName, Stream content, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
         CreateDirectory(fileName);
 
-        await DeleteFileAsync(fileName, stoppingToken);
+        await DeleteFileAsync(fileName, cancellationToken);
 
         await using var fileStream = File.OpenWrite(fileName);
 
         content.Position = 0;
-        await content.CopyToAsync(fileStream, stoppingToken);
+        await content.CopyToAsync(fileStream, cancellationToken);
     }
 
-    public async Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken stoppingToken = default)
+    public async Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
         CreateDirectory(fileName);
 
-        await DeleteFileAsync(fileName, stoppingToken);
+        await DeleteFileAsync(fileName, cancellationToken);
 
         await using var fileStream = File.OpenWrite(fileName);
 
         await using var stream = content.OpenReadStream();
 
         stream.Position = 0;
-        await stream.CopyToAsync(fileStream, stoppingToken);
+        await stream.CopyToAsync(fileStream, cancellationToken);
     }
 
-    public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken stoppingToken = default)
+    public Task<IReadOnlyCollection<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref path);
 
         var reg = new Regex(fileMask);
 
-        return Task.FromResult(Directory.GetFiles(path).Where(fileName => reg.IsMatch(fileName)));
+        var result = Directory.GetFiles(path)
+            .Where(fileName => reg.IsMatch(fileName))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyCollection<string>>(result);
     }
 
+    public Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
 
     public void DeleteFile(string fileName)
     {
@@ -119,7 +129,7 @@ public class FileStorageProvider : IStorageProvider
             File.Delete(fileName);
     }
 
-    public Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default)
+    public Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(prefix))
         {
@@ -147,7 +157,7 @@ public class FileStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
-    public Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default)
+    public Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
     {
         var images = new List<string>();
         foreach (var filePath in filePaths)
@@ -169,11 +179,14 @@ public class FileStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
-    public async Task DeleteFileAsync(string fileName, CancellationToken stoppingToken = default)
+    public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
+
+    public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
-        var fileExists = await IsFileExistAsync(fileName, stoppingToken);
+        var fileExists = await IsFileExistAsync(fileName, cancellationToken);
 
         if (fileExists)
         {
@@ -181,7 +194,7 @@ public class FileStorageProvider : IStorageProvider
         }
     }
 
-    public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken stoppingToken = default)
+    public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref sourceFileName);
         BuildFullPath(ref destinationFileName);
@@ -191,7 +204,7 @@ public class FileStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
-    public Task<bool> IsFileExistAsync(string fileName, CancellationToken stoppingToken = default)
+    public Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
         => Task.FromResult(IsFileExist(fileName));
 
     public bool IsFileExist(string fileName)
@@ -211,6 +224,9 @@ public class FileStorageProvider : IStorageProvider
 
     public string GetBaseUrl()
         => _webRootPath;
+
+    public Task<string> GetUriAsync(string filePath)
+        => throw new NotImplementedException();
 
     public void CreateDirectory(string path)
     {
@@ -264,13 +280,6 @@ public class FileStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
-    public Stream ReadStream(string fileName, CancellationToken stoppingToken = default)
-    {
-        BuildFullPath(ref fileName);
-
-        return File.OpenRead(fileName);
-    }
-
     public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
         BuildFullPath(ref rootDirectory);
@@ -291,28 +300,5 @@ public class FileStorageProvider : IStorageProvider
     }
 
     public Task UndeleteFile(string filePath)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            return;
-        }
-
-        _disposed = true;
-    }
+        => throw new NotImplementedException();
 }
