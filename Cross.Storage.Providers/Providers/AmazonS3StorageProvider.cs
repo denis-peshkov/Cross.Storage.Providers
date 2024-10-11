@@ -4,12 +4,12 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 {
     private readonly AmazonS3Client _client;
 
-    private readonly AmazonS3Options _amazonS3Options;
+    private readonly AmazonS3StorageOptions _amazonS3StorageOptions;
 
     public AmazonS3StorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, AmazonS3Client client)
     {
         _client = client;
-        _amazonS3Options = storageProviderOptions.Value.AmazonS3Storage ?? throw new ArgumentNullException(nameof(StorageProviderOptions.AmazonS3Storage));
+        _amazonS3StorageOptions = storageProviderOptions.Value.AmazonS3Storage ?? throw new ArgumentNullException(nameof(StorageProviderOptions.AmazonS3Storage));
     }
 
     protected override void Dispose(bool disposing)
@@ -23,7 +23,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new GetObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
         };
 
@@ -37,7 +37,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new GetObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
         };
 
@@ -63,7 +63,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         var request = new GetObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
         };
 
@@ -78,7 +78,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new PutObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
             ContentBody = content,
         };
@@ -90,7 +90,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new PutObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
             InputStream = new MemoryStream(content),
         };
@@ -102,7 +102,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new PutObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
             InputStream = content,
         };
@@ -114,7 +114,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new PutObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
             InputStream = content.OpenReadStream(),
             ContentType = mimetype, // content.ContentType,
@@ -130,7 +130,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new DeleteObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
         };
 
@@ -141,7 +141,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new DeleteObjectRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
         };
 
@@ -151,7 +151,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Prefix = prefix,
         };
 
@@ -160,7 +160,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         {
             var deleteObjectRequest = new DeleteObjectRequest
             {
-                BucketName = _amazonS3Options.BucketName,
+                BucketName = _amazonS3StorageOptions.BucketName,
                 Key = item.Key,
             };
 
@@ -177,7 +177,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
             {
                 var deleteRequest = new DeleteObjectRequest
                 {
-                    BucketName = _amazonS3Options.BucketName,
+                    BucketName = _amazonS3StorageOptions.BucketName,
                     Key = fileName,
                 };
 
@@ -189,9 +189,9 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     public async Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
         => await _client.CopyObjectAsync(new CopyObjectRequest()
         {
-            SourceBucket = _amazonS3Options.BucketName,
+            SourceBucket = _amazonS3StorageOptions.BucketName,
             SourceKey = sourceFileName,
-            DestinationBucket = _amazonS3Options.BucketName,
+            DestinationBucket = _amazonS3StorageOptions.BucketName,
             DestinationKey = destinationFileName,
         }, cancellationToken);
 
@@ -205,7 +205,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     public async Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Prefix = prefix,
             MaxKeys = 1,
         };
@@ -225,7 +225,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         {
             await _client.GetObjectMetadataAsync(new()
             {
-                BucketName = _amazonS3Options.BucketName,
+                BucketName = _amazonS3StorageOptions.BucketName,
                 Key = fileName,
             }, cancellationToken);
 
@@ -263,7 +263,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         {
             var request = new ListObjectsV2Request
             {
-                BucketName = _amazonS3Options.BucketName,
+                BucketName = _amazonS3StorageOptions.BucketName,
                 Prefix = path,
             };
 
@@ -288,7 +288,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         var request = new ListObjectsV2Request
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Prefix = path,
         };
 
@@ -297,7 +297,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         var tasks = response.S3Objects
             .Select(obj =>
                 new DeleteObjectRequest
-                    { BucketName = _amazonS3Options.BucketName, Key = obj.Key }
+                    { BucketName = _amazonS3StorageOptions.BucketName, Key = obj.Key }
             )
             .Select(deleteRequest =>
                 _client.DeleteObjectAsync(deleteRequest)).Cast<Task>().ToList();
@@ -315,7 +315,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new GetPreSignedUrlRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = filePath,
             Expires = DateTime.UtcNow.AddDays(7)
         };
@@ -328,7 +328,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         // Create request to list objects in the root directory pattern
         var request = new ListObjectsV2Request
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Prefix = rootDirectory,
             Delimiter = "/"
         };
@@ -343,7 +343,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     {
         var request = new GetObjectMetadataRequest
         {
-            BucketName = _amazonS3Options.BucketName,
+            BucketName = _amazonS3StorageOptions.BucketName,
             Key = fileName,
         };
 

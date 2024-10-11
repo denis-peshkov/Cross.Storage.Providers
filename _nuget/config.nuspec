@@ -13,8 +13,7 @@
     <readme>docs\README.md</readme>
     <icon>icon.png</icon>
     <releaseNotes>
-      Add support .Net 8.
-      Rework AmazonS3StorageProvider.
+      Fix S3 config options.
     </releaseNotes>
     <description>Simple .NET StorageProviders with easy register and use. Support File system, Azure Blobs, Amazon S3. Written on C#.</description>
     <tags>.NET Storage Providers Files Azure Blobs Amazon S3 NetCore</tags>

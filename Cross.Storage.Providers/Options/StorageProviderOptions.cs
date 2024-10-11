@@ -8,5 +8,5 @@ public class StorageProviderOptions
 
     public FileStorageOptions? FileStorage { get; set; }
 
-    public AmazonS3Options? AmazonS3Storage { get; set; }
+    public AmazonS3StorageOptions? AmazonS3Storage { get; set; }
 }
