@@ -1,9 +1,7 @@
 ﻿namespace Cross.Storage.Providers.Services;
 
-public class AmazonS3StorageProvider : IStorageProvider
+public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 {
-    private bool _disposed;
-
     private readonly AmazonS3Client _s3Client;
 
     private readonly StorageProviderOptions _storageProviderOptions;
@@ -12,27 +10,6 @@ public class AmazonS3StorageProvider : IStorageProvider
     {
         _s3Client = s3Client;
         _storageProviderOptions = storageProviderOptions.Value;
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            return;
-        }
-
-        _disposed = true;
     }
 
     public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
@@ -66,7 +43,7 @@ public class AmazonS3StorageProvider : IStorageProvider
         return memoryStream.ToArray();
     }
 
-    public Stream ReadStream(string fileName, CancellationToken cancellationToken = default)
+    public async Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
     {
         if (!IsFileExist(fileName))
         {
@@ -80,7 +57,7 @@ public class AmazonS3StorageProvider : IStorageProvider
         };
 
         // Execute request
-        var response = _s3Client.GetObjectAsync(request, cancellationToken).GetAwaiter().GetResult();
+        var response = await _s3Client.GetObjectAsync(request, cancellationToken);
 
         return response.ResponseStream;
     }
@@ -192,6 +169,11 @@ public class AmazonS3StorageProvider : IStorageProvider
                 await _s3Client.DeleteObjectAsync(deleteRequest, cancellationToken);
             }
         }
+    }
+
+    public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 
     public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)

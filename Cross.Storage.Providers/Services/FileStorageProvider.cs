@@ -1,9 +1,7 @@
 namespace Cross.Storage.Providers.Services;
 
-public class FileStorageProvider : IStorageProvider
+public class FileStorageProvider : StorageProviderBase, IStorageProvider
 {
-    private bool _disposed;
-
     private readonly string _webRootPath;
 
     public FileStorageProvider(string webRootPath)
@@ -42,6 +40,13 @@ public class FileStorageProvider : IStorageProvider
         }
 
         return File.ReadAllBytesAsync(fileName);
+    }
+
+    public Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
+    {
+        BuildFullPath(ref fileName);
+
+        return Task.FromResult<Stream>(File.OpenRead(fileName));
     }
 
     public async Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default)
@@ -169,6 +174,11 @@ public class FileStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
+    public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
@@ -264,13 +274,6 @@ public class FileStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
-    public Stream ReadStream(string fileName, CancellationToken cancellationToken = default)
-    {
-        BuildFullPath(ref fileName);
-
-        return File.OpenRead(fileName);
-    }
-
     public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
         BuildFullPath(ref rootDirectory);
@@ -293,26 +296,5 @@ public class FileStorageProvider : IStorageProvider
     public Task UndeleteFile(string filePath)
     {
         throw new NotImplementedException();
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            return;
-        }
-
-        _disposed = true;
     }
 }

@@ -1,9 +1,7 @@
 ﻿namespace Cross.Storage.Providers.Services;
 
-public class AzureStorageProvider : IStorageProvider
+public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 {
-    private bool _disposed;
-
     private readonly BlobContainerClient _blobContainerClient;
 
     public AzureStorageProvider(IOptions<StorageProviderOptions> storageProviderOptions, BlobServiceClient blobServiceClient)
@@ -29,7 +27,7 @@ public class AzureStorageProvider : IStorageProvider
         return result.Value.Content.ToArray();
     }
 
-    public Stream ReadStream(string fileName, CancellationToken cancellationToken = default)
+    public async Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default)
     {
         if (!IsFileExist(fileName))
         {
@@ -37,7 +35,7 @@ public class AzureStorageProvider : IStorageProvider
         }
 
         var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
-        var result = blockBlob.DownloadStreaming(cancellationToken: cancellationToken);
+        var result = await blockBlob.DownloadStreamingAsync(cancellationToken: cancellationToken);
         return result.Value.Content;
     }
 
@@ -71,6 +69,11 @@ public class AzureStorageProvider : IStorageProvider
 
     public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
         => await _blobContainerClient.DeleteBlobIfExistsAsync(fileName, cancellationToken: cancellationToken);
+
+    public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 
     public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
@@ -110,27 +113,6 @@ public class AzureStorageProvider : IStorageProvider
 
     public string GetBaseUrl()
         => _blobContainerClient.Uri.ToString();
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            return;
-        }
-
-        _disposed = true;
-    }
 
     /// <summary>
     /// Возвращает BlobNames отфильтрованные по паттерну которые находятся в rootDirectory

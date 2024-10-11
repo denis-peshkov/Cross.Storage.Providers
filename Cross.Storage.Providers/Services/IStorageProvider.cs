@@ -6,7 +6,7 @@ public interface IStorageProvider : IDisposable
 
     Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default);
 
-    Stream ReadStream(string fileName, CancellationToken cancellationToken = default);
+    Task<Stream> ReadStream(string fileName, CancellationToken cancellationToken = default);
 
     Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default);
 
@@ -25,6 +25,8 @@ public interface IStorageProvider : IDisposable
     Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default);
 
     Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default);
+
+    Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
 
     Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
 
