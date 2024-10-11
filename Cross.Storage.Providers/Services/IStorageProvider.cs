@@ -2,33 +2,33 @@ namespace Cross.Storage.Providers.Services;
 
 public interface IStorageProvider : IDisposable
 {
-    Task<string> ReadAsync(string fileName, CancellationToken stoppingToken = default);
+    Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default);
 
-    Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken stoppingToken = default);
+    Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default);
 
-    Stream ReadStream(string fileName, CancellationToken stoppingToken = default);
+    Stream ReadStream(string fileName, CancellationToken cancellationToken = default);
 
-    Task WriteAsync(string fileName, string content, CancellationToken stoppingToken = default);
+    Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default);
 
-    Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken stoppingToken = default);
+    Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default);
 
-    Task WriteStreamAsync(string fileName, Stream content, CancellationToken stoppingToken = default);
+    Task WriteStreamAsync(string fileName, Stream content, CancellationToken cancellationToken = default);
 
-    Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken stoppingToken = default);
+    Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken stoppingToken = default);
+    Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default);
 
-    Task DeleteFileAsync(string fileName, CancellationToken stoppingToken = default);
+    Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default);
 
     void DeleteFile(string fileName);
 
-    Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default);
+    Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default);
 
-    Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default);
+    Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default);
 
-    Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken stoppingToken = default);
+    Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
 
-    Task<bool> IsFileExistAsync(string fileName, CancellationToken stoppingToken = default);
+    Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default);
 
     bool IsFileExist(string fileName);
 

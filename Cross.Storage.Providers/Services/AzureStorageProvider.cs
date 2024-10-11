@@ -14,22 +14,22 @@ public class AzureStorageProvider : IStorageProvider
         _blobContainerClient.CreateIfNotExists();
     }
 
-    public Task<string> ReadAsync(string fileName, CancellationToken stoppingToken = default)
+    public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
-    public async Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken stoppingToken = default)
+    public async Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        if (!await IsFileExistAsync(fileName, stoppingToken))
+        if (!await IsFileExistAsync(fileName, cancellationToken))
         {
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
         var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
-        var result = await blockBlob.DownloadContentAsync(cancellationToken: stoppingToken);
+        var result = await blockBlob.DownloadContentAsync(cancellationToken: cancellationToken);
         return result.Value.Content.ToArray();
     }
 
-    public Stream ReadStream(string fileName, CancellationToken stoppingToken = default)
+    public Stream ReadStream(string fileName, CancellationToken cancellationToken = default)
     {
         if (!IsFileExist(fileName))
         {
@@ -37,45 +37,45 @@ public class AzureStorageProvider : IStorageProvider
         }
 
         var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
-        var result = blockBlob.DownloadStreaming(cancellationToken: stoppingToken);
+        var result = blockBlob.DownloadStreaming(cancellationToken: cancellationToken);
         return result.Value.Content;
     }
 
-    public Task WriteAsync(string fileName, string content, CancellationToken stoppingToken = default)
+    public Task WriteAsync(string fileName, string content, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
-    public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken stoppingToken = default)
+    public async Task WriteBinaryAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
     {
         var blockBlob = _blobContainerClient.GetBlobClient(fileName);
 
-        await blockBlob.UploadAsync(new BinaryData(content), cancellationToken: stoppingToken);
+        await blockBlob.UploadAsync(new BinaryData(content), cancellationToken: cancellationToken);
     }
 
-    public async Task WriteStreamAsync(string fileName, Stream content, CancellationToken stoppingToken = default)
+    public async Task WriteStreamAsync(string fileName, Stream content, CancellationToken cancellationToken = default)
     {
         var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
 
-        await blockBlob.UploadAsync(content, cancellationToken: stoppingToken);
+        await blockBlob.UploadAsync(content, cancellationToken: cancellationToken);
     }
 
-    public async Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken stoppingToken = default)
+    public async Task WriteStreamAsync(string fileName, IFormFile content, string mimetype, CancellationToken cancellationToken = default)
     {
         var blobClient = _blobContainerClient.GetBlobClient(fileName);
         await using var stream = content.OpenReadStream();
 
-        await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = mimetype }, cancellationToken: stoppingToken);
+        await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = mimetype }, cancellationToken: cancellationToken);
     }
 
-    public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken stoppingToken = default)
+    public Task<IEnumerable<string>> GetFilesByMaskAsync(string path, string fileMask, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
-    public async Task DeleteFileAsync(string fileName, CancellationToken stoppingToken = default)
-        => await _blobContainerClient.DeleteBlobIfExistsAsync(fileName, cancellationToken: stoppingToken);
+    public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
+        => await _blobContainerClient.DeleteBlobIfExistsAsync(fileName, cancellationToken: cancellationToken);
 
-    public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken stoppingToken = default)
+    public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
-    public async Task<bool> IsFileExistAsync(string fileName, CancellationToken stoppingToken = default)
+    public async Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
     {
         var blockBlob = _blobContainerClient.GetBlockBlobClient(fileName);
 
@@ -179,29 +179,29 @@ public class AzureStorageProvider : IStorageProvider
         _blobContainerClient.DeleteBlobIfExists(fileName);
     }
 
-    public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken stoppingToken = default)
+    public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(prefix))
         {
             return;
         }
 
-        await foreach (var blobItem in _blobContainerClient.GetBlobsAsync(prefix: prefix, cancellationToken: stoppingToken))
+        await foreach (var blobItem in _blobContainerClient.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken))
         {
             // Delete each blob with the specified prefix
             var blobClient = _blobContainerClient.GetBlobClient(blobItem.Name);
-            await blobClient.DeleteIfExistsAsync(cancellationToken: stoppingToken);
+            await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
         }
     }
 
-    public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken stoppingToken = default)
+    public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
     {
         var blobNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
         foreach (var blobName in blobNames)
         {
             if (!filePaths.Contains(blobName))
             {
-                await _blobContainerClient.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: stoppingToken);
+                await _blobContainerClient.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
             }
         }
     }
