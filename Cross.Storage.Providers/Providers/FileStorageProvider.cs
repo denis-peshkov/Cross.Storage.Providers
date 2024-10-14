@@ -11,8 +11,10 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
 
     private void BuildFullPath(ref string filePath)
     {
-        if (filePath.Contains(_webRootPath))
+        if (!string.IsNullOrEmpty(filePath) && filePath.Contains(_webRootPath))
+        {
             return;
+        }
 
         filePath = _webRootPath + filePath;
     }
