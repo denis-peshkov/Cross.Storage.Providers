@@ -1,4 +1,4 @@
-﻿namespace Cross.Storage.Providers.Providers;
+﻿namespace Cross.Storage.Providers.Services;
 
 public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 {
