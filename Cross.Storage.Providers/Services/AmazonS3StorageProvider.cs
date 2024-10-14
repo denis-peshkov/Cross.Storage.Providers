@@ -1,4 +1,4 @@
-﻿namespace Cross.Storage.Providers.Providers;
+﻿namespace Cross.Storage.Providers.Services;
 
 public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 {
@@ -56,11 +56,6 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        if (!await IsFileExistAsync(fileName, cancellationToken))
-        {
-            throw new InvalidOperationException($"File {fileName} doesn`t exist.");
-        }
-
         var request = new GetObjectRequest
         {
             BucketName = _amazonS3StorageOptions.BucketName,
@@ -170,6 +165,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
     {
         var fileNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+
         foreach (var fileName in fileNames)
         {
             if (!filePaths.Contains(fileName))
