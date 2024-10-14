@@ -69,7 +69,6 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         // Execute request
         var response = await _client.GetObjectAsync(request, cancellationToken);
-        response.ResponseStream.Position = 0;
 
         return response.ResponseStream;
     }
