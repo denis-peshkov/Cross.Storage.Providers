@@ -24,18 +24,20 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 
         var blockBlob = _client.GetBlockBlobClient(fileName);
         var result = await blockBlob.DownloadContentAsync(cancellationToken: cancellationToken);
+
         return result.Value.Content.ToArray();
     }
 
     public async Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        if (!IsFileExist(fileName))
+        if (!await IsFileExistAsync(fileName, cancellationToken))
         {
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
         var blockBlob = _client.GetBlockBlobClient(fileName);
         var result = await blockBlob.DownloadStreamingAsync(cancellationToken: cancellationToken);
+
         return result.Value.Content;
     }
 
@@ -84,15 +86,13 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
     public async Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
     {
         var blockBlob = _client.GetBlockBlobClient(fileName);
-
-        return (await blockBlob.ExistsAsync()).Value;
+        var result = await blockBlob.ExistsAsync(cancellationToken);
+        return result.Value;
     }
 
     public bool IsFileExist(string fileName)
     {
-        var blockBlob = _client.GetBlockBlobClient(fileName);
-
-        return blockBlob.Exists().Value;
+        return IsFileExistAsync(fileName, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public string GetFileSize(string fileName, SizeUnits sizeUnit)
@@ -129,11 +129,13 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
     /// <param name="searchPattern">Supports ".*" or "*.*" or "*.jpeg|*.png"</param>
     /// <param name="searchOption"></param>
     /// <returns></returns>
-    public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
+    public Task<string[]> GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
         rootDirectory = Regex.Replace(rootDirectory, @"\\+|/+", @"/");
         if (!rootDirectory.EndsWith('/'))
+        {
             rootDirectory += "/";
+        }
 
         var searchExtensions = searchPattern.Replace("*", "").Split('|').Where(ext => ext != ".").ToArray();
         IEnumerable<BlobItem> blobs = _client.GetBlobs(traits: BlobTraits.Metadata, prefix: rootDirectory).Where(b => b.Metadata.Count == 0);
@@ -154,9 +156,11 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
                 var countSeparator = rootDirectory.Count(x => x.Equals('/'));
                 blobPathes = blobs.Where(b => b.Name.Count(c => c.Equals('/')) == countSeparator).Select(b => b.Name).ToArray();
                 break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(searchOption), searchOption, null);
         }
 
-        return blobPathes;
+        return Task.FromResult(blobPathes);
     }
 
     public void DeleteFile(string fileName)
@@ -186,7 +190,7 @@ public class AzureStorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
     {
-        var blobNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+        var blobNames = await GetFilePaths(directory, "*", SearchOption.AllDirectories);
         foreach (var blobName in blobNames)
         {
             if (!filePaths.Contains(blobName))

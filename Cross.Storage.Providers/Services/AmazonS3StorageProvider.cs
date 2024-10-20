@@ -164,7 +164,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
     {
-        var fileNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+        var fileNames = await GetFilePaths(directory, "*", SearchOption.AllDirectories);
 
         foreach (var fileName in fileNames)
         {
@@ -290,12 +290,15 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         var response = await _client.ListObjectsV2Async(request);
 
         var tasks = response.S3Objects
-            .Select(obj =>
-                new DeleteObjectRequest
-                    { BucketName = _amazonS3StorageOptions.BucketName, Key = obj.Key }
+            .Select(obj => new DeleteObjectRequest
+                {
+                    BucketName = _amazonS3StorageOptions.BucketName,
+                    Key = obj.Key,
+                }
             )
-            .Select(deleteRequest =>
-                _client.DeleteObjectAsync(deleteRequest)).Cast<Task>().ToList();
+            .Select(deleteRequest => _client.DeleteObjectAsync(deleteRequest))
+            .Cast<Task>()
+            .ToList();
 
         await Task.WhenAll(tasks);
     }
@@ -312,26 +315,65 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         {
             BucketName = _amazonS3StorageOptions.BucketName,
             Key = filePath,
-            Expires = DateTime.UtcNow.AddDays(7)
+            Expires = DateTime.UtcNow.AddDays(7),
         };
 
         return await _client.GetPreSignedURLAsync(request);
     }
 
-    public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
+    public async Task<string[]> GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
+        rootDirectory = Regex.Replace(rootDirectory, @"\\+|/+", @"/");
+        if (!rootDirectory.EndsWith('/'))
+        {
+            rootDirectory += "/";
+        }
+
         // Create request to list objects in the root directory pattern
         var request = new ListObjectsV2Request
         {
             BucketName = _amazonS3StorageOptions.BucketName,
             Prefix = rootDirectory,
-            Delimiter = "/"
+            Delimiter = "/",
         };
 
-        // Execute request
-        var response = _client.ListObjectsV2Async(request).GetAwaiter().GetResult();
+        var filePaths = new List<string>();
+        ListObjectsV2Response response;
+        do
+        {
+            response = await _client.ListObjectsV2Async(request);
 
-        return response.CommonPrefixes.Select(commonPrefix => commonPrefix.TrimEnd('/')).ToArray();
+            var files = response.S3Objects.Where(x => !x.Key.EndsWith('/'));
+            if (!string.IsNullOrEmpty(searchPattern))
+            {
+                files = files.Where(x => Regex.IsMatch(x.Key, searchPattern));
+            }
+
+            switch (searchOption)
+            {
+                case SearchOption.AllDirectories:
+                    filePaths.AddRange(files.Select(x => x.Key).ToList());
+                    break;
+                case SearchOption.TopDirectoryOnly:
+                    var countSeparator = rootDirectory.Count(x => x.Equals('/'));
+                    filePaths.AddRange(files.Where(b => b.Key.Count(c => c.Equals('/')) == countSeparator).Select(x => x.Key).ToList());
+                    break;
+            }
+
+            if (string.IsNullOrEmpty(searchPattern))
+            {
+                filePaths.AddRange(response.S3Objects.Where(x => !x.Key.EndsWith('/')).Select(x => x.Key).ToList());
+            }
+            else
+            {
+                filePaths.AddRange(response.S3Objects.Where(x => !x.Key.EndsWith('/') && Regex.IsMatch(x.Key, searchPattern)).Select(x => x.Key).ToList());
+            }
+
+            request.ContinuationToken = response.NextContinuationToken;
+        }
+        while (response.IsTruncated);
+
+        return filePaths.ToArray();
     }
 
     public string GetFileSize(string fileName, SizeUnits sizeUnit)

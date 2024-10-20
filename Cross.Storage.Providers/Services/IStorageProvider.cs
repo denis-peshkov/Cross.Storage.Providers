@@ -48,7 +48,7 @@ public interface IStorageProvider : IDisposable
 
     Task<string> GetUriAsync(string filePath);
 
-    string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption);
+    Task<string[]> GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption);
 
     /// <summary>
     /// Получение размера файла.

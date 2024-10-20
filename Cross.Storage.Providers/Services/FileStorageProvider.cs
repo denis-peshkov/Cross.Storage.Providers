@@ -159,7 +159,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         return Task.CompletedTask;
     }
 
-    public Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
+    public async Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default)
     {
         var images = new List<string>();
         foreach (var filePath in filePaths)
@@ -169,7 +169,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
             images.Add(path);
         }
 
-        var fileNames = GetFilePaths(directory, "*", SearchOption.AllDirectories);
+        var fileNames = await GetFilePaths(directory, "*", SearchOption.AllDirectories);
         foreach (var fileName in fileNames)
         {
             if (!images.Contains(fileName))
@@ -177,8 +177,6 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
                 File.Delete(fileName);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
@@ -221,6 +219,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         BuildFullPath(ref path);
 
         var result = Path.GetDirectoryName(path);
+
         return !string.IsNullOrEmpty(result) ? result : string.Empty;
     }
 
@@ -282,16 +281,18 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         return Task.CompletedTask;
     }
 
-    public string[] GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
+    public Task<string[]> GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption)
     {
         BuildFullPath(ref rootDirectory);
 
         var directoryInfo = new DirectoryInfo(rootDirectory);
 
         if (!directoryInfo.Exists)
-            return Array.Empty<string>();
+        {
+            return Task.FromResult(Array.Empty<string>());
+        }
 
-        return Directory.GetFiles(rootDirectory, searchPattern, searchOption);
+        return Task.FromResult(Directory.GetFiles(rootDirectory, searchPattern, searchOption));
     }
 
     public string GetFileSize(string fileName, SizeUnits sizeUnit)
