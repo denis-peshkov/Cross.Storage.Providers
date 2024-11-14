@@ -1,11 +1,15 @@
 namespace Cross.Storage.Providers.Services;
 
-public class FileStorageProvider : StorageProviderBase, IStorageProvider
+/// <inheritdoc cref="Cross.Storage.Providers.Services.IStorageProvider" />
+public class FileStorageProvider : DisposableBase, IStorageProvider
 {
     private readonly string _webRootPath;
 
     public FileStorageProvider(string webRootPath)
     {
+        if (string.IsNullOrWhiteSpace(webRootPath))
+            throw new ArgumentNullException(nameof(webRootPath));
+
         _webRootPath = webRootPath;
     }
 
@@ -16,31 +20,31 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
             return;
         }
 
-        filePath = _webRootPath + filePath;
+        filePath = _webRootPath.Combine(filePath)!.AbsolutePath;
     }
 
-    public Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
+    public async Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
-        if (!IsFileExist(fileName))
+        if (!await IsFileExistAsync(fileName))
         {
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        return File.ReadAllTextAsync(fileName, cancellationToken);
+        return await File.ReadAllTextAsync(fileName, cancellationToken);
     }
 
-    public Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
+    public async Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default)
     {
         BuildFullPath(ref fileName);
 
-        if (!IsFileExist(fileName))
+        if (!await IsFileExistAsync(fileName))
         {
             throw new InvalidOperationException($"File {fileName} doesn`t exist.");
         }
 
-        return File.ReadAllBytesAsync(fileName, cancellationToken);
+        return await File.ReadAllBytesAsync(fileName, cancellationToken);
     }
 
     public Task<Stream> ReadStreamAsync(string fileName, CancellationToken cancellationToken = default)
@@ -111,24 +115,35 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         var reg = new Regex(fileMask);
 
         var result = Directory.GetFiles(path)
-            .Where(fileName => reg.IsMatch(fileName))
+            .Where(fileName => reg.IsMatch(Path.GetFileName(fileName)))
             .ToList();
 
         return Task.FromResult<IReadOnlyCollection<string>>(result);
     }
 
     public Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    {
+        var reg = new Regex("(?i)^"+prefix);
+        var path = GetBaseUrl();
 
-    public void DeleteFile(string fileName)
+        var result = Directory.GetFiles(path)
+            .Where(fileName => reg.IsMatch(Path.GetFileName(fileName)))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyCollection<string>>(result);
+    }
+
+    public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(fileName))
             return;
 
         BuildFullPath(ref fileName);
 
-        if (File.Exists(fileName))
+        if (await IsFileExistAsync(fileName, cancellationToken))
+        {
             File.Delete(fileName);
+        }
     }
 
     public Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
@@ -180,18 +195,13 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
-
-    public async Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        BuildFullPath(ref fileName);
+        BuildFullPath(ref sourceFileName);
+        BuildFullPath(ref destinationFileName);
 
-        var fileExists = await IsFileExistAsync(fileName, cancellationToken);
+        File.Copy(sourceFileName, destinationFileName, true);
 
-        if (fileExists)
-        {
-            File.Delete(fileName);
-        }
+        return Task.CompletedTask;
     }
 
     public Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
@@ -199,19 +209,16 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
         BuildFullPath(ref sourceFileName);
         BuildFullPath(ref destinationFileName);
 
-        File.Move(sourceFileName, destinationFileName);
+        File.Move(sourceFileName, destinationFileName, true);
 
         return Task.CompletedTask;
     }
 
     public Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default)
-        => Task.FromResult(IsFileExist(fileName));
-
-    public bool IsFileExist(string fileName)
     {
         BuildFullPath(ref fileName);
 
-        return File.Exists(fileName);
+        return Task.FromResult(File.Exists(fileName));
     }
 
     public string GetDirectoryName(string path)
@@ -226,7 +233,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     public string GetBaseUrl()
         => _webRootPath;
 
-    public Task<string> GetUriAsync(string filePath)
+    public Task<string> GetUriAsync(string filePath, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
     public void CreateDirectory(string path)
@@ -246,7 +253,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     /// </summary>
     /// <param name="path">Путь к директории.</param>
     /// <param name="recursive">Рекурсивное удаление.</param>
-    public Task DeleteDirectory(string path, bool recursive = true)
+    public Task DeleteDirectoryAsync(string path, bool recursive = true)
     {
         BuildFullPath(ref path);
 
@@ -264,7 +271,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     /// Удаляет все файлы в директории.
     /// </summary>
     /// <param name="path">Путь к директории.</param>
-    public Task DeleteAllFilesFromDirectory(string path)
+    public Task DeleteAllFilesFromDirectoryAsync(string path)
     {
         BuildFullPath(ref path);
 
@@ -299,7 +306,7 @@ public class FileStorageProvider : StorageProviderBase, IStorageProvider
     {
         BuildFullPath(ref fileName);
 
-        return (new FileInfo(fileName).Length / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
+        return (new FileInfo(fileName).Length / Math.Pow(1024, (long)sizeUnit)).ToString("0.000");
     }
 
     public Task UndeleteFile(string filePath)

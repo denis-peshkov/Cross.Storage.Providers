@@ -1,6 +1,6 @@
 ﻿namespace Cross.Storage.Providers.Services;
 
-public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
+public class AmazonS3StorageProvider : DisposableBase, IStorageProvider
 {
     private readonly AmazonS3Client _client;
 
@@ -131,17 +131,6 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         await _client.DeleteObjectAsync(request, cancellationToken);
     }
 
-    public void DeleteFile(string fileName)
-    {
-        var request = new DeleteObjectRequest
-        {
-            BucketName = _amazonS3StorageOptions.BucketName,
-            Key = fileName,
-        };
-
-        _client.DeleteObjectAsync(request).GetAwaiter().GetResult();
-    }
-
     public async Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default)
     {
         var request = new ListObjectsRequest {
@@ -182,13 +171,17 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public async Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
-        => await _client.CopyObjectAsync(new CopyObjectRequest()
+    {
+        var request = new CopyObjectRequest
         {
             SourceBucket = _amazonS3StorageOptions.BucketName,
             SourceKey = sourceFileName,
             DestinationBucket = _amazonS3StorageOptions.BucketName,
             DestinationKey = destinationFileName,
-        }, cancellationToken);
+        };
+
+        await _client.CopyObjectAsync(request, cancellationToken);
+    }
 
 
     public async Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default)
@@ -199,7 +192,8 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
     public async Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default)
     {
-        var request = new ListObjectsRequest {
+        var request = new ListObjectsRequest
+        {
             BucketName = _amazonS3StorageOptions.BucketName,
             Prefix = prefix,
             MaxKeys = 1,
@@ -241,17 +235,12 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         }
     }
 
-    public bool IsFileExist(string fileName)
-    {
-        return IsFileExistAsync(fileName).GetAwaiter().GetResult();
-    }
-
     public void CreateDirectory(string path)
     {
         // AmazonS3Storage stores files in a flat hierarchy. No need to create directory.
     }
 
-    public async Task DeleteDirectory(string path, bool recursive = true)
+    public async Task DeleteDirectoryAsync(string path, bool recursive = true)
     {
         path = Regex.Replace(path, @"\\+|/+", @"/");
         if (recursive)
@@ -270,11 +259,11 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
         }
         else
         {
-            await DeleteAllFilesFromDirectory(path);
+            await DeleteAllFilesFromDirectoryAsync(path);
         }
     }
 
-    public async Task DeleteAllFilesFromDirectory(string path)
+    public async Task DeleteAllFilesFromDirectoryAsync(string path)
     {
         path = Regex.Replace(path, @"\\+|/+", @"/");
 
@@ -304,12 +293,25 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
     }
 
     public string GetDirectoryName(string path)
-        => throw new NotImplementedException();
+    {
+        var result = Path.GetDirectoryName(path);
+
+        return !string.IsNullOrEmpty(result) ? result : string.Empty;
+    }
 
     public string GetBaseUrl()
-        => throw new NotImplementedException();
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _amazonS3StorageOptions.BucketName,
+            Key = null,
+            Expires = DateTime.UtcNow.AddDays(7),
+        };
 
-    public async Task<string> GetUriAsync(string filePath)
+        return _client.GetPreSignedURL(request);
+    }
+
+    public async Task<string> GetUriAsync(string filePath, CancellationToken cancellationToken = default)
     {
         var request = new GetPreSignedUrlRequest
         {
@@ -386,7 +388,7 @@ public class AmazonS3StorageProvider : StorageProviderBase, IStorageProvider
 
         var response = _client.GetObjectMetadataAsync(request).GetAwaiter().GetResult();
 
-        return (response.ContentLength / Math.Pow(1024, (long)sizeUnit)).ToString("0.00");
+        return (response.ContentLength / Math.Pow(1024, (int)sizeUnit)).ToString("0.00");
     }
 
     public Task UndeleteFile(string filePath)

@@ -2,6 +2,12 @@ namespace Cross.Storage.Providers.Services;
 
 public interface IStorageProvider : IDisposable
 {
+    string GetDirectoryName(string path);
+
+    void CreateDirectory(string path);
+
+    Task DeleteDirectoryAsync(string path, bool recursive = true);
+
     Task<string> ReadAsync(string fileName, CancellationToken cancellationToken = default);
 
     Task<byte[]> ReadBinaryAsync(string fileName, CancellationToken cancellationToken = default);
@@ -20,43 +26,40 @@ public interface IStorageProvider : IDisposable
 
     Task<IReadOnlyCollection<string>> SearchAsync(string prefix, CancellationToken cancellationToken = default);
 
-    Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default);
+    Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default);
 
-    void DeleteFile(string fileName);
+    Task DeleteAllFilesFromDirectoryAsync(string path);
+
+    Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default);
 
     Task DeleteFilesByPrefixAsync(string? prefix, CancellationToken cancellationToken = default);
 
     Task DeleteFilesExceptAsync(string directory, IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default);
 
+    Task UndeleteFile(string filePath);
+
     Task CopyFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
 
     Task MoveFileAsync(string sourceFileName, string destinationFileName, CancellationToken cancellationToken = default);
 
-    Task<bool> IsFileExistAsync(string fileName, CancellationToken cancellationToken = default);
-
-    bool IsFileExist(string fileName);
-
-    void CreateDirectory(string path);
-
-    Task DeleteDirectory(string path, bool recursive = true);
-
-    Task DeleteAllFilesFromDirectory(string path);
-
-    string GetDirectoryName(string path);
-
     string GetBaseUrl();
 
-    Task<string> GetUriAsync(string filePath);
+    Task<string> GetUriAsync(string filePath, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Returns BlobNames filtered by pattern that exists in the root directory
+    /// </summary>
+    /// <param name="rootDirectory">Root directory</param>
+    /// <param name="searchPattern">Supports ".*" or "*.*" or "*.jpeg|*.png"</param>
+    /// <param name="searchOption">Search options</param>
+    /// <returns></returns>
     Task<string[]> GetFilePaths(string rootDirectory, string searchPattern, SearchOption searchOption);
 
     /// <summary>
-    /// Получение размера файла.
+    /// Get file size
     /// </summary>
-    /// <param name="fileName">Имя файла.</param>
-    /// <param name="sizeUnit">Единица измерения информации.</param>
-    /// <returns>Размер файла.</returns>
+    /// <param name="fileName">File name</param>
+    /// <param name="sizeUnit">Units of measurement</param>
+    /// <returns>File size</returns>
     string GetFileSize(string fileName, SizeUnits sizeUnit);
-
-    Task UndeleteFile(string filePath);
 }
