@@ -13,13 +13,14 @@
     <readme>docs\README.md</readme>
     <icon>icon.png</icon>
     <releaseNotes>
-      Fix S3 config options.
+      Implement missing StorageProvides's methods.
     </releaseNotes>
     <description>Simple .NET StorageProviders with easy register and use. Support File system, Azure Blobs, Amazon S3. Written on C#.</description>
     <tags>.NET Storage Providers Files Azure Blobs Amazon S3 NetCore</tags>
     <dependencies>
-      <dependency id="AWSSDK.S3" version="3.7.404.5" />
+      <dependency id="AWSSDK.S3" version="3.7.405.6" />
       <dependency id="Azure.Storage.Blobs" version="12.22.2" />
+      <dependency id="Cross.Url" version="7.0.2" />
       <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
       <dependency id="Microsoft.AspNetCore.Mvc" version="2.2.0" />
       <dependency id="Microsoft.Extensions.DependencyInjection" version="8.0.1" />

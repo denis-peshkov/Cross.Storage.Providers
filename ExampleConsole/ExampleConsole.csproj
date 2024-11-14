@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <Target Name="DeleteBinObjFolders" BeforeTargets="Clean">
+        <RemoveDir Directories=".\bin"/>
+        <Delete Files=".\obj\**\*.cs"/>
+    </Target>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+
+        <None Update="appsettings.Development.json">
+            <DependentUpon>appsettings.json</DependentUpon>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Cross.Storage.Providers\Cross.Storage.Providers.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <StaticFiles Include="Assets\**\*.*"/>
+    </ItemGroup>
+    <Target Name="CopyCustomContentBuild" AfterTargets="Build">
+        <Copy SourceFiles="@(StaticFiles)" DestinationFolder="$(OutDir)/Assets/%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    </Target>
+
+</Project>

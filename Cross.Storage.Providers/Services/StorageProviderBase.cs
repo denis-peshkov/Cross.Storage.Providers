@@ -1,6 +1,6 @@
 namespace Cross.Storage.Providers.Services;
 
-public abstract class StorageProviderBase : IDisposable
+public abstract class DisposableBase : IDisposable
 {
     private bool _disposed;
 
@@ -48,7 +48,7 @@ public abstract class StorageProviderBase : IDisposable
     // does not get called.
     // It gives your base class the opportunity to finalize.
     // Do not provide destructors in types derived from this class.
-    ~StorageProviderBase()
+    ~DisposableBase()
     {
         // Do not re-create Dispose clean-up code here.
         // Calling Dispose(false) is optimal in terms of

@@ -16,8 +16,10 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.404.5" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.405.6" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.22.2" />
+    
+    <PackageReference Include="Cross.Url" Version="7.0.2" />
     
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />

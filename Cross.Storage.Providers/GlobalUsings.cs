@@ -17,6 +17,7 @@ global using Azure.Storage.Blobs.Specialized;
 global using Cross.Storage.Providers.Enums;
 global using Cross.Storage.Providers.Options;
 global using Cross.Storage.Providers.Services;
+global using Cross.Url.Extensions;
 global using Microsoft.AspNetCore.Http;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
